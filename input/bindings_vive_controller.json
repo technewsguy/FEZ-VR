@@ -1,0 +1,18 @@
+{
+  "controller_type": "vive_controller",
+  "description": "FEZ VR default: trackpads as sticks, triggers rotate, grips, menu buttons",
+  "name": "FEZ VR default",
+  "bindings": {
+    "/actions/fezvr": {
+      "sources": [
+        { "path": "/user/hand/left/input/trackpad", "mode": "trackpad", "inputs": { "position": { "output": "/actions/fezvr/in/stick_l" }, "click": { "output": "/actions/fezvr/in/a_l" } } },
+        { "path": "/user/hand/right/input/trackpad", "mode": "trackpad", "inputs": { "position": { "output": "/actions/fezvr/in/stick_r" }, "click": { "output": "/actions/fezvr/in/a_r" } } },
+        { "path": "/user/hand/left/input/trigger", "mode": "trigger", "inputs": { "pull": { "output": "/actions/fezvr/in/trigger_l" } } },
+        { "path": "/user/hand/right/input/trigger", "mode": "trigger", "inputs": { "pull": { "output": "/actions/fezvr/in/trigger_r" } } },
+        { "path": "/user/hand/right/input/grip", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/b_r" } } },
+        { "path": "/user/hand/left/input/application_menu", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/pad_l" } } },
+        { "path": "/user/hand/right/input/application_menu", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/pad_r" } } }
+      ]
+    }
+  }
+}

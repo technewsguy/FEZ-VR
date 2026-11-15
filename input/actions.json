@@ -1,0 +1,40 @@
+{
+  "default_bindings": [
+    { "controller_type": "knuckles", "binding_url": "bindings_knuckles.json" },
+    { "controller_type": "oculus_touch", "binding_url": "bindings_oculus_touch.json" },
+    { "controller_type": "vive_controller", "binding_url": "bindings_vive_controller.json" }
+  ],
+  "action_sets": [ { "name": "/actions/fezvr", "usage": "leftright" } ],
+  "actions": [
+    { "name": "/actions/fezvr/in/stick_l", "type": "vector2" },
+    { "name": "/actions/fezvr/in/stick_r", "type": "vector2" },
+    { "name": "/actions/fezvr/in/stickclick_l", "type": "boolean" },
+    { "name": "/actions/fezvr/in/stickclick_r", "type": "boolean" },
+    { "name": "/actions/fezvr/in/trigger_l", "type": "vector1" },
+    { "name": "/actions/fezvr/in/trigger_r", "type": "vector1" },
+    { "name": "/actions/fezvr/in/a_l", "type": "boolean" },
+    { "name": "/actions/fezvr/in/a_r", "type": "boolean" },
+    { "name": "/actions/fezvr/in/b_l", "type": "boolean" },
+    { "name": "/actions/fezvr/in/b_r", "type": "boolean" },
+    { "name": "/actions/fezvr/in/pad_l", "type": "boolean" },
+    { "name": "/actions/fezvr/in/pad_r", "type": "boolean" }
+  ],
+  "localization": [
+    {
+      "language_tag": "en_US",
+      "/actions/fezvr": "FEZ VR",
+      "/actions/fezvr/in/stick_l": "Move / menus (left stick)",
+      "/actions/fezvr/in/stick_r": "Look in first person (right stick)",
+      "/actions/fezvr/in/stickclick_l": "First-person view (left stick click)",
+      "/actions/fezvr/in/stickclick_r": "Clamp look (right stick click)",
+      "/actions/fezvr/in/trigger_l": "Rotate world left (LT)",
+      "/actions/fezvr/in/trigger_r": "Rotate world right (RT)",
+      "/actions/fezvr/in/a_l": "Grab / throw / talk (X)",
+      "/actions/fezvr/in/a_r": "Jump / accept (A)",
+      "/actions/fezvr/in/b_l": "Inventory (Y)",
+      "/actions/fezvr/in/b_r": "Cancel / back (B)",
+      "/actions/fezvr/in/pad_l": "Map (Back)",
+      "/actions/fezvr/in/pad_r": "Pause (Start)"
+    }
+  ]
+}

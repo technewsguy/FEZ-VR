@@ -1,0 +1,21 @@
+{
+  "controller_type": "knuckles",
+  "description": "FEZ VR default: sticks, triggers rotate, A/B, grips, trackpad clicks",
+  "name": "FEZ VR default",
+  "bindings": {
+    "/actions/fezvr": {
+      "sources": [
+        { "path": "/user/hand/left/input/thumbstick", "mode": "joystick", "inputs": { "position": { "output": "/actions/fezvr/in/stick_l" }, "click": { "output": "/actions/fezvr/in/stickclick_l" } } },
+        { "path": "/user/hand/right/input/thumbstick", "mode": "joystick", "inputs": { "position": { "output": "/actions/fezvr/in/stick_r" }, "click": { "output": "/actions/fezvr/in/stickclick_r" } } },
+        { "path": "/user/hand/left/input/trigger", "mode": "trigger", "inputs": { "pull": { "output": "/actions/fezvr/in/trigger_l" } } },
+        { "path": "/user/hand/right/input/trigger", "mode": "trigger", "inputs": { "pull": { "output": "/actions/fezvr/in/trigger_r" } } },
+        { "path": "/user/hand/left/input/a", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/a_l" } } },
+        { "path": "/user/hand/right/input/a", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/a_r" } } },
+        { "path": "/user/hand/left/input/b", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/b_l" } } },
+        { "path": "/user/hand/right/input/b", "mode": "button", "inputs": { "click": { "output": "/actions/fezvr/in/b_r" } } },
+        { "path": "/user/hand/left/input/trackpad", "mode": "trackpad", "inputs": { "click": { "output": "/actions/fezvr/in/pad_l" } } },
+        { "path": "/user/hand/right/input/trackpad", "mode": "trackpad", "inputs": { "click": { "output": "/actions/fezvr/in/pad_r" } } }
+      ]
+    }
+  }
+}
