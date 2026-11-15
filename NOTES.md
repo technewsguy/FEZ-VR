@@ -178,3 +178,10 @@
   button. Map zoom (LB/RB) = right stick up/down while GameState.InMap.
 
 
+
+## Published (2026-11-14)
+- github.com/technewsguy/FEZ-VR, pre-release v0.1.0 (package.ps1 -> dist\FEZ-VR-v0.1.0.zip). install.ps1 copies files\ next to FEZ.exe;
+  first run adds 'FEZ VR' to Steam/SteamVR (launcher\add-steam-vr-shortcut.ps1, x86 fezvr-launch.exe in FEZVR-launcher);
+  later runs only refresh the launcher. FEZ-VR.exe sets SteamAppId=224760 itself (no steam_appid.txt needed).
+- Scoop: technewsguy/scoop-vr-mods bucket\fez-vr.json (FEZVR_GAMEDIR override).
+
