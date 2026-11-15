@@ -37,6 +37,13 @@ $name = 'FEZ VR'
 $links = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs')) | ForEach-Object { Join-Path $_ "$name.lnk" }
 
 if ($Uninstall) {
+    # The Steam entry's artwork (the entry itself is removed in Steam)
+    $gidFile = Join-Path $GameDir 'FEZVR-launcher\steam_gameid.txt'
+    if (Test-Path $gidFile) {
+        $id = ([uint64](Get-Content $gidFile)) -shr 32
+        $steam = (Get-ItemProperty HKCU:\Software\Valve\Steam -ErrorAction SilentlyContinue).SteamPath
+        if ($steam) { Get-ChildItem "$steam\userdata\*\config\grid\$id*" -ErrorAction SilentlyContinue | Remove-Item -Force }
+    }
     foreach ($f in $ModFiles) {
         $t = Join-Path $GameDir $f
         if (Test-Path $t) { Remove-Item $t -Recurse -Force; Write-Host "Removed $f" }
@@ -54,8 +61,13 @@ if ($Uninstall) {
 Copy-Item (Join-Path $here 'files\*') $GameDir -Recurse -Force
 Write-Host "Copied the mod (FEZ-VR.exe and its libraries)."
 
-# 2. "FEZ VR" in Steam and SteamVR with artwork, plus desktop / Start menu shortcuts
-if (-not $NoSteamEntry) {
+# 2. "FEZ VR" in Steam and SteamVR with artwork, plus desktop / Start menu shortcuts. When the entry exists already
+#    (an update), only the launcher is refreshed, so Steam is not restarted.
+$ld = Join-Path $GameDir 'FEZVR-launcher'
+if (Test-Path (Join-Path $ld 'steam_gameid.txt')) {
+    Copy-Item (Join-Path $here 'steam-entry\fezvr-launch.exe'), (Join-Path $here 'steam-entry\openvr_api.dll') $ld -Force
+    Write-Host "'FEZ VR' is already in Steam; launcher updated."
+} elseif (-not $NoSteamEntry) {
     & (Join-Path $here 'steam-entry\add-steam-vr-shortcut.ps1') -GameDir $GameDir -BuildDir (Join-Path $here 'steam-entry')
 }
 
