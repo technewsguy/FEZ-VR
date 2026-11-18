@@ -546,6 +546,7 @@ namespace FezVr
             NpcGround.Restore();
             drawMs = t.Elapsed.TotalMilliseconds;
             if (dumpNext) { dumpNext = false; try { DumpImages(); } catch (Exception e) { Log.Info("dump failed: " + e.Message); } }
+            if (CaptureEvery > 0) Capture();
             try
             {
                 glFlush();   // push the eye renders to the GPU before the compositor reads them
@@ -661,6 +662,26 @@ namespace FezVr
                 bmp.UnlockBits(data);
                 bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
             }
+        }
+
+        // Debug: FEZVR_CAPTURE=<n> saves the left eye every n frames for the first 45 s of VR (fezvr_dump\cap_<ms>.png),
+        // to catch short glitches nobody can press F7 for.
+        static readonly int CaptureEvery = ParseInt(Environment.GetEnvironmentVariable("FEZVR_CAPTURE"));
+        static System.Diagnostics.Stopwatch captureWatch;
+        static int captureFrame;
+        static int ParseInt(string s) { int v; return int.TryParse(s, out v) ? v : 0; }
+
+        static void Capture()
+        {
+            if (captureWatch == null) captureWatch = System.Diagnostics.Stopwatch.StartNew();
+            if (captureWatch.Elapsed.TotalSeconds > 45 || captureFrame++ % CaptureEvery != 0) return;
+            try
+            {
+                string dir = System.IO.Path.Combine(Launcher.Dir, "fezvr_dump");
+                Directory.CreateDirectory(dir);
+                SavePng(Eyes[0], System.IO.Path.Combine(dir, "cap_" + captureWatch.ElapsedMilliseconds.ToString("000000") + ".png"));
+            }
+            catch (Exception e) { Log.Info("capture failed: " + e.Message); }
         }
 
         static void DumpImages()
