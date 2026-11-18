@@ -11,5 +11,4 @@
 
 The libraries in `deps/harmony` (HarmonyX 2.9, MonoMod 22.1.29.1, Mono.Cecil 0.10.4) are the copies shipped with BepInEx 5.
 
-FEZ and its assets belong to Polytron Corporation. This repository contains none of them; the Steam artwork used for
-the "FEZ VR" library entry is copied from the user's own Steam cache or Steam's public store CDN at install time.
+FEZ and its assets belong to Polytron Corporation. This repository contains none of them.

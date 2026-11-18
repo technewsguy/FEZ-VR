@@ -6,7 +6,7 @@ FEZ.
 
 > Early test version. It is playable, but expect rough edges. Please report what you find (see Feedback below).
 
-FEZ has no VR support of its own. This mod hosts the game in its own process, renders every frame twice from your
+FEZ has no VR support of its own. This mod loads into the game when it starts, renders every frame twice from your
 tracked eyes, and sends the images to SteamVR:
 
 - **Diorama view** - the current part of the level sits in front of you at arm's length, in true stereo 3D, with the
@@ -18,33 +18,60 @@ tracked eyes, and sends the images to SteamVR:
   the block they stand on). Water, transitions and the opening zoom are adapted to 3D as well.
 - **Motion controllers** through SteamVR Input (default bindings for Valve Index, Oculus Touch and Vive wands), mapped
   to FEZ's gamepad controls. A regular gamepad keeps working too.
-- A **"FEZ VR" entry in Steam and SteamVR** with FEZ's artwork, and "FEZ VR" desktop / Start menu shortcuts. Regular
-  flat FEZ stays as it was.
+- **One-click installer.** Afterwards you play from Steam's normal **FEZ** entry, which also shows under **VR** in
+  the SteamVR library. FEZ's own files are never changed.
 
 Tested on a Bigscreen Beyond with Valve Index controllers. Other headsets that work with SteamVR should work, but
 are untested.
 
 ## Requirements
 
-- FEZ (Steam, Windows; the current PC version 1.12)
+- FEZ (Steam; the current PC version 1.12), on Windows, or on Linux through Proton (untested)
 - SteamVR and a VR headset (motion controllers or a gamepad)
 
 ## Install
 
-1. Download the latest `FEZ-VR-v*.zip` from [Releases](../../releases) and unzip it anywhere.
-2. Close FEZ. Double-click `install.cmd` (or run `install.ps1` in PowerShell).
-   - It finds FEZ through Steam; otherwise run `install.ps1 -GameDir "<folder with FEZ.exe>"`.
-   - It copies the mod next to `FEZ.exe` (`FEZ-VR.exe` and its libraries). FEZ's own files are not changed.
-   - It adds **FEZ VR** to your Steam library (with "Include in VR Library" on and FEZ's artwork) and to SteamVR's
-     library, plus desktop and Start menu shortcuts. **Steam is closed and restarted** for this
-     (`-NoSteamEntry` skips it).
-3. Play **FEZ VR** from Steam, SteamVR or the shortcut. It starts SteamVR if needed.
+### Windows
 
-Also available from the [scoop-vr-mods](https://github.com/technewsguy/scoop-vr-mods) Scoop bucket
-(`scoop install vrmods/fez-vr`, or through UniGetUI).
+1. Download `FEZ-VR-Setup-v*.exe` from [Releases](../../releases).
+2. Close FEZ and double-click the installer. It finds FEZ in your Steam libraries (or use **Browse...**) and installs
+   with one click. If Windows SmartScreen warns about an unknown app, click **More info > Run anyway**.
+3. If Steam is open, the installer offers to restart it so FEZ shows up in SteamVR's **VR** library tab. If you say
+   no, it's listed the next time Steam closes.
+4. Play **FEZ** from Steam, on the desktop or in the headset. It starts in VR and starts SteamVR if needed.
 
-**Uninstall:** run `uninstall.cmd`. It removes the mod files and the shortcuts; remove the "FEZ VR" Steam entry in
-Steam (right-click > Manage > Remove non-Steam game).
+The installer only adds files next to `FEZ.exe`: `FEZ-VR.exe` with its libraries, and `FEZ.exe.config`, which tells
+.NET to load the mod into FEZ when it starts.
+
+Upgrading from v0.1.0: just run the installer. It removes the old launcher, shortcuts and SteamVR entry. Remove the old
+**FEZ VR** entry from your Steam library yourself (right-click > Manage > Remove non-Steam game).
+
+**Uninstall:** run **FEZ-VR Uninstall.exe** in the FEZ folder (or the setup exe again and click **Uninstall**). It
+removes everything the mod added. Deleting `FEZ.exe.config` alone also turns the mod off.
+
+### Linux / Steam Deck (untested)
+
+1. In Steam, right-click **FEZ > Properties > Compatibility**, tick **Force the use of a specific Steam Play
+   compatibility tool**, and pick Proton. FEZ has a native Linux version, but the mod needs the Windows one.
+2. Add the downloaded `FEZ-VR-Setup-v*.exe` to Steam with **Add a Non-Steam Game**, set it to Proton the same way, and
+   start it from Steam. It finds FEZ in your Linux Steam libraries.
+3. Set FEZ's **Launch Options** to (the installer has a **Copy launch option** button):
+   ```
+   bash -c 'exec "${@/FEZ.exe/FEZ-VR.exe}"' -- %command%
+   ```
+   This starts the mod's own host, `FEZ-VR.exe`, in place of `FEZ.exe`. Proton's .NET may not use `FEZ.exe.config`.
+
+SteamVR for Linux is needed. The VR library tab listing is Windows only.
+
+### With UniGetUI or Scoop
+
+FEZ-VR is in the [scoop-vr-mods](https://github.com/technewsguy/scoop-vr-mods) bucket (`scoop install vrmods/fez-vr`,
+or through UniGetUI). It runs the same installer silently; uninstalling the package removes the mod.
+
+### Command line
+
+`FEZ-VR-Setup.exe /S` installs silently (log in `%TEMP%\fezvr-setup.log`). Add `/UNINSTALL` to remove the mod, and
+`/GAMEDIR="<folder with FEZ.exe>"` if FEZ isn't found.
 
 ## Controls (Valve Index)
 
@@ -63,7 +90,7 @@ Steam (right-click > Manage > Remove non-Steam game).
 | F8 (keyboard) | Recenter the view |
 | F7 (keyboard) | Save the eye images to `fezvr_dump` next to `FEZ.exe` |
 
-Bindings can be changed in SteamVR's controller settings under "FEZ VR".
+Bindings can be changed in SteamVR's controller settings under "FEZ".
 
 ## Feedback
 
@@ -79,7 +106,8 @@ on may still need 3D treatment; the first-person view mode is untested in VR.
 ## Building from source
 
 `build.ps1 -GameDir "<a FEZ folder>" [-Install]` compiles `src\*.cs` against the game's assemblies (C# 5, .NET 4,
-Windows `csc`, x86). `package.ps1` builds the release zip. See `NOTES.md` for how it works and the gotchas found
+Windows `csc`, x86) and builds `build\FEZ-VR-Setup.exe` with the mod embedded. `package.ps1` makes the release files
+in `dist\`. See `NOTES.md` for how it works and the gotchas found
 along the way.
 
 ## Disclaimer

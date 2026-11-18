@@ -15,23 +15,54 @@ using Valve.VR;
 
 namespace FezVr
 {
+    // Normal use: FEZ.exe.config (written by the installer) names Boot as FEZ.exe's AppDomainManager, so .NET loads
+    // this assembly into FEZ.exe and calls Boot before the game's Main. Steam's normal FEZ entry then plays in VR, and
+    // none of FEZ's files are changed. FEZ-VR.exe can also be run directly (it hosts FEZ.exe), e.g. from a Linux
+    // launch option where the config file may not be honoured.
+    public sealed class Boot : AppDomainManager
+    {
+        static bool done;
+        // This runs before .NET has loaded FEZ.exe as the program. Touching FEZ's types now would load FEZ.exe a second
+        // time (FileLoadException at startup), so the patching waits until FEZ.exe itself has loaded, before its Main.
+        public override void InitializeNewDomain(AppDomainSetup appDomainInfo)
+        {
+            AppDomain.CurrentDomain.AssemblyLoad += OnLoad;
+        }
+
+        static void OnLoad(object sender, AssemblyLoadEventArgs e)
+        {
+            if (done || e.LoadedAssembly.GetName().Name != "FEZ") return;
+            done = true;
+            AppDomain.CurrentDomain.AssemblyLoad -= OnLoad;
+            try { Launcher.Start("FEZ.exe"); } catch (Exception x) { Log.Info("start failed: " + x); }
+        }
+    }
+
     public static class Launcher
     {
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
         public static string Dir;
 
         [STAThread]
         public static int Main(string[] args)
         {
+            Start("FEZ-VR.exe");
+            MethodInfo entry = typeof(FezGame.Fez).Assembly.EntryPoint;
+            entry.Invoke(null, entry.GetParameters().Length == 1 ? new object[] { args } : null);
+            return 0;
+        }
+
+        public static void Start(string how)
+        {
             Dir = AppDomain.CurrentDomain.BaseDirectory;
             Environment.CurrentDirectory = Dir;
-            // Started from a Steam shortcut (or the desktop), Steamworks must still see FEZ's own app id.
-            Environment.SetEnvironmentVariable("SteamAppId", "224760");
-            Environment.SetEnvironmentVariable("SteamGameId", "224760");
+            // Steam sets these when it starts FEZ; when FEZ-VR.exe is started any other way Steamworks must still see FEZ's id.
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamAppId"))) Environment.SetEnvironmentVariable("SteamAppId", "224760");
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SteamGameId"))) Environment.SetEnvironmentVariable("SteamGameId", "224760");
             // In VR the game window is never focused; SDL drops gamepad input for unfocused windows unless told not to.
             Environment.SetEnvironmentVariable("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
             Log.Clear();
-            Log.Info("FEZ-VR " + Version + " starting in " + Dir);
+            Log.Info("FEZ-VR " + Version + " starting in " + Dir + " (via " + how + ")");
             try
             {
                 var harmony = new Harmony("fezvr");
@@ -39,9 +70,28 @@ namespace FezVr
                 Log.Info("patches applied");
             }
             catch (Exception e) { Log.Info("patching failed: " + e); }
-            MethodInfo entry = typeof(FezGame.Fez).Assembly.EntryPoint;
-            entry.Invoke(null, entry.GetParameters().Length == 1 ? new object[] { args } : null);
-            return 0;
+            CheckSteamVRSection();
+        }
+
+        // Steam drops the game from SteamVR's VR library tab when Valve updates FEZ's store info. If so, the uninstaller
+        // copy waits in the background for Steam to close and lists it again (see installer\SteamVRTag.cs). It is
+        // started through WMI so it isn't part of the game's process tree (Steam would think the game is still running).
+        static void CheckSteamVRSection()
+        {
+            var t = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    if (Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Wine") != null) return;
+                    if (SteamVRTag.IsTagged() != false) return;
+                    string helper = System.IO.Path.Combine(Dir, "FEZ-VR Uninstall.exe");
+                    if (!File.Exists(helper)) return;
+                    SteamVRTag.StartWaiter(helper);
+                    Log.Info("Steam dropped FEZ from its VR library tab; it's listed again after Steam closes.");
+                }
+                catch (Exception e) { Log.Info("Steam VR section check failed: " + e.Message); }
+            });
+            t.IsBackground = true; t.Start();
         }
     }
 
@@ -159,8 +209,27 @@ namespace FezVr
                 Log.Info("eye " + e + " tangents l=" + l + " r=" + r + " t=" + t + " b=" + b + " ipd x=" + eyeToHead[e].M41);
             }
             Ready = true;
+            RemoveOldLibraryEntry();
             VrInput.Init(Launcher.Dir);
             if (Environment.GetEnvironmentVariable("FEZVR_ALIGNTEST") == "1") SetupAlignTest();
+        }
+
+        // v0.1.0 had its own "FEZ VR" SteamVR library entry. The installer removes it while SteamVR is closed; if
+        // SteamVR was running then, it left the manifest file behind and the entry is removed here.
+        static void RemoveOldLibraryEntry()
+        {
+            try
+            {
+                string ld = System.IO.Path.Combine(Launcher.Dir, "FEZVR-launcher");
+                string manifest = System.IO.Path.Combine(ld, "fezvr.vrmanifest");
+                if (!File.Exists(manifest)) return;
+                // Not gated on IsApplicationInstalled: right after SteamVR starts it can report the entry as missing
+                // while appconfig.json still lists the manifest.
+                var r = OpenVR.Applications != null ? OpenVR.Applications.RemoveApplicationManifest(manifest) : EVRApplicationError.InvalidParameter;
+                Log.Info("old SteamVR library entry: " + r);
+                Directory.Delete(ld, true);
+            }
+            catch (Exception e) { Log.Info("old SteamVR entry cleanup failed: " + e.Message); }
         }
 
         // ---- Alignment test: SteamVR draws a red 20 cm square (an overlay, always correct per eye) at MarkerPos; we draw
@@ -700,7 +769,7 @@ namespace FezVr
     [HarmonyPatch]
     static class IntroZoomIn3D
     {
-        static readonly Type T = AccessTools.TypeByName("FezGame.Components.IntroZoomIn");
+        static readonly Type T = typeof(FezGame.Fez).Assembly.GetType("FezGame.Components.IntroZoomIn");
         static readonly FieldInfo ScaleField = T != null ? AccessTools.Field(T, "Scale") : null;
         static MethodBase TargetMethod() { return AccessTools.Method(T, "Draw"); }
         static void Prefix(object __instance, out float __state)
@@ -718,7 +787,7 @@ namespace FezVr
     [HarmonyPatch]
     static class GomezOnGround
     {
-        static readonly Type T = AccessTools.TypeByName("FezGame.Components.GomezHost");
+        static readonly Type T = typeof(FezGame.Fez).Assembly.GetType("FezGame.Components.GomezHost");
         static readonly PropertyInfo MeshProp = AccessTools.Property(T, "PlayerMesh");
         static System.Collections.Generic.IEnumerable<MethodBase> TargetMethods() { yield return AccessTools.Method(T, "DoDraw_Internal"); yield return AccessTools.Method(T, "PreDraw"); }
         static FezGame.Services.IPlayerManager pm;
@@ -818,7 +887,7 @@ namespace FezVr
     [HarmonyPatch]
     static class WaterInDiorama
     {
-        static readonly Type T = AccessTools.TypeByName("FezGame.Components.LiquidHost");
+        static readonly Type T = typeof(FezGame.Fez).Assembly.GetType("FezGame.Components.LiquidHost");
         static readonly FieldInfo LiquidF = AccessTools.Field(T, "LiquidMesh"), RaysF = AccessTools.Field(T, "RaysMesh"), FoamF = AccessTools.Field(T, "FoamMesh");
         public static FezEngine.Structure.Mesh Liquid, Rays, Foam;
         public static Vector3 DepthAxis; public static float FrontDepth;   // foam strip pinned to the water's front face

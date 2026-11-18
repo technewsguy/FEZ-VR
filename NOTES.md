@@ -185,3 +185,18 @@
   later runs only refresh the launcher. FEZ-VR.exe sets SteamAppId=224760 itself (no steam_appid.txt needed).
 - Scoop: technewsguy/scoop-vr-mods bucket\fez-vr.json (FEZVR_GAMEDIR override).
 
+
+## v0.2.0 (2026-11-18): installer exe, Steam's normal FEZ entry plays in VR
+- Loading: the installer writes `FEZ.exe.config` with `<appDomainManagerAssembly value="FEZ-VR, ...">` /
+  `<appDomainManagerType value="FezVr.Boot">`. .NET loads FEZ-VR.exe into FEZ.exe at startup; FEZ's files are untouched.
+- Gotcha: InitializeNewDomain runs before FEZ.exe is loaded as the entry assembly. Touching FEZ types there loads FEZ.exe
+  a second time -> FileLoadException at startup. Boot waits for AppDomain.AssemblyLoad of "FEZ", then patches (before Main).
+  AccessTools.TypeByName also misses FEZ types that early: use typeof(FezGame.Fez).Assembly.GetType(...).
+- FEZ-VR.exe still works as a host (Main): used by the Linux launch option `bash -c 'exec "${@/FEZ.exe/FEZ-VR.exe}"' -- %command%`
+  (untested; Proton's Mono may ignore the config).
+- VR tab: appinfo.vdf launch/0 (oslist windows, no type key) gets type "vr" (installer\SteamVRTag.cs, as NSLT-VR).
+- PS4 pads: FEZ's 2016 SDL2 ignores raw DualShock 4; v0.1.0's non-Steam shortcut had Steam Input on. The installer
+  now sets `UseSteamControllerConfig "2"` under UserLocalConfigStore/apps/224760 in userdata\<id>\config\localconfig.vdf
+  (Steam closed; only the installer does this, not the mod's re-tag helper). Uninstall leaves it on.
+- v0.1.0 leftovers (launcher dir, Start menu link, SteamVR manifest, grid art) are removed; the non-Steam "FEZ VR"
+  shortcut is left for the user to remove.
